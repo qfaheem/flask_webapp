@@ -1,4 +1,4 @@
-from flask import Flask, render_template, flash, redirect, url_for, session, request, jsonify
+from flask import Flask, render_template, flash, redirect, url_for, session, request, jsonify, current_app
 from celery import Celery
 # from flask_sqlalchemy import SQLAlchemy
 # from flask_migrate import Migrate
@@ -35,9 +35,10 @@ login_manager.login_view = 'login'
 
 # Define the user_loader function
 @login_manager.user_loader
-def load_user(user_email):
-    # Replace the following line with code to retrieve the user from your database
-    return User.query.get(user_email)
+def load_user(id):
+    db.session.get(User, int(id))
+
+
 
 @celery.task
 def delay_func():
@@ -57,10 +58,15 @@ def landing():
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('login'))
     form = LoginForm()
+    print("=====", form)
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
+        # user = User.get_by_email(form.username.data)
         if user and user.check_password(form.password.data):
+            login_user(user)
             session['logged_in'] = True 
             print("working",user.password)
             flash('Login successful!', 'success')
@@ -68,7 +74,21 @@ def login():
             return render_template('uploading.html')
         else:
             flash('Invalid username or password', 'danger')
+    flash('Invalid username or password', 'danger')
     return render_template('login.html', form=form)
+
+# @app.route('/login', methods=['GET', 'POST'])
+# def login():
+#     form = LoginForm()
+#     if form.validate_on_submit():
+#         user = User.query.filter_by(username=form.username.data).first()
+#         if user and user.check_password(form.password.data):
+#             login_user(user)
+#             flash('Login successful!', 'success')
+#             return redirect(url_for('upload_data'))  # Redirect to the upload data page or any other page
+#         else:
+#             flash('Invalid username or password', 'danger')
+#     return render_template('login.html', form=form)
 
 @app.route('/signup', methods=['GET', 'POST'])
 @login_required
@@ -148,6 +168,7 @@ def upload_data():
 def logout():
     session.pop('logged_in', None) 
     session.clear()  # Clear the session data
+    logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('landing'))
 

@@ -1,0 +1,12 @@
+{% extends 'layout.html' %}
+
+{% block title %}Landing Page{% endblock %}
+
+{% block content %}
+    <div class="text-center">
+        <h1>Welcome to Flask App</h1>
+        <p>Project Description</p>
+        <a href="{{ url_for('login') }}" class="btn btn-primary">Login</a>
+        <a href="{{ url_for('signup') }}" class="btn btn-secondary">Sign Up</a>
+    </div>
+{% endblock %}

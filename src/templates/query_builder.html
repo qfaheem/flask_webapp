@@ -1,0 +1,16 @@
+{% extends 'layout.html' %}
+
+{% block title %}Query Builder{% endblock %}
+
+{% block content %}
+    <h2>Query Builder</h2>
+    <form method="POST">
+        <!-- Add your query inputs here -->
+        <div class="form-group">
+            <label for="queryInput">Query Input</label>
+            <input type="text" class="form-control" id="queryInput" name="queryInput">
+        </div>
+        <button type="submit" class="btn btn-primary">Query Data</button>
+        <button type="reset" class="btn btn-secondary">Reset</button>
+    </form>
+{% endblock %}
