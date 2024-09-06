@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+
+{% block title %}Query Builder{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Query Results</h1>
+
+    {% if message %}
+        <div class="alert alert-warning">
+            {{ message }}
+        </div>
+    {% elif data %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Domain</th>
+                    <th>Year Founded</th>
+                    <th>Industry</th>
+                    <th>Size Range</th>
+                    <th>Locality</th>
+                    <th>Country</th>
+                    <th>LinkedIn URL</th>
+                    <th>Current Employee</th>
+                    <th>Total Employee</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in data %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.domain }}</td>
+                        <td>{{ item.year_founded }}</td>
+                        <td>{{ item.industry }}</td>
+                        <td>{{ item.size_range }}</td>
+                        <td>{{ item.locality }}</td>
+                        <td>{{ item.country }}</td>
+                        <td>{{ item.linkedin_url }}</td>
+                        <td>{{ item.current_employee }}</td>
+                        <td>{{ item.total_employee }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Pagination Controls -->
+        <nav>
+            <ul class="pagination">
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('query_builder', page=pagination.prev_num) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+
+                {% for p in pagination.iter_pages() %}
+                    {% if p %}
+                        <li class="page-item {% if p == pagination.page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('query_builder', page=p) }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('query_builder', page=pagination.next_num) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+    {% endif %}
+</div>
+{% endblock %}

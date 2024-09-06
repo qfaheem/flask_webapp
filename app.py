@@ -8,7 +8,7 @@ from src.models.user import User
 from src.models.company_data import Company
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import time, os
+import time, os, json
 from extensions import db, migrate, login_manager
 import pandas as pd
 
@@ -35,10 +35,24 @@ login_manager.login_view = 'login'
 
 # Define the user_loader function
 @login_manager.user_loader
-def load_user(id):
-    db.session.get(User, int(id))
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
-
+def get_request():
+    mimetype = request.mimetype
+    _request_data = {}
+    if mimetype == 'application/x-www-form-urlencoded':
+        print(request.form)
+        _request_data = json.loads(next(iter(request.form.keys())))
+    elif mimetype == 'multipart/form-data':
+        _request_data = dict(request.form)
+    elif mimetype == 'application/json':
+        _request_data = request.json
+    else:
+        _request_data = request.data.decode()
+    if _request_data == "":
+        _request_data = {}
+    return _request_data
 
 @celery.task
 def delay_func():
@@ -67,14 +81,14 @@ def login():
         # user = User.get_by_email(form.username.data)
         if user and user.check_password(form.password.data):
             login_user(user)
-            session['logged_in'] = True 
-            print("working",user.password)
             flash('Login successful!', 'success')
-            # return redirect(url_for('upload_data'))
-            return render_template('uploading.html')
+            # # return redirect(url_for('upload_data'))
+            next_page = request.args.get('next')  # Get the 'next' parameter
+            return redirect(next_page or url_for('upload_data'))
+            # return render_template('uploading.html')
         else:
             flash('Invalid username or password', 'danger')
-    flash('Invalid username or password', 'danger')
+    # flash('Invalid username or password', 'danger')
     return render_template('login.html', form=form)
 
 # @app.route('/login', methods=['GET', 'POST'])
@@ -91,7 +105,6 @@ def login():
 #     return render_template('login.html', form=form)
 
 @app.route('/signup', methods=['GET', 'POST'])
-@login_required
 def signup():
     form = SignupForm()
     if form.validate_on_submit():
@@ -102,6 +115,7 @@ def signup():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
+        login_user(new_user)
         flash('Account created successfully! Please log in.', 'success')
         # return redirect(url_for('upload_data'))
         return render_template('uploading.html')
@@ -139,6 +153,7 @@ def process_file(file_path):
             print(f"An error occurred while processing the file: {e}")
 
 @app.route('/upload_data', methods=['GET', 'POST'])
+@login_required
 def upload_data():
     print("request in upload data ")
     if request.method == 'POST':
@@ -161,10 +176,11 @@ def upload_data():
             # flash('File uploaded and processing started!', 'success')
             # return jsonify({"task_id": task.id, "status": "File processing started!"})
             # return redirect(url_for('upload_data'))
-    return {"message":"uploaded"}
-    # return render_template('upload_data.html')  # Ensure this template exists
+    # return {"message":"uploaded"}
+    return render_template('uploading.html')  # Ensure this template exists
 
 @app.route('/logout')
+@login_required
 def logout():
     session.pop('logged_in', None) 
     session.clear()  # Clear the session data
@@ -173,14 +189,76 @@ def logout():
     return redirect(url_for('landing'))
 
 
-@app.route('/users', methods=['GET', 'POST'])
+@app.route('/users', methods=['GET'])
+@login_required
 def manage_users():
-    users = User.query.all()  # Fetch all users
+    print("current : ", current_user)
+    page = request.args.get('page', 1, type=int)
+    users = User.query.paginate(page=page, per_page=10)  # Adjust per_page as needed
     return render_template('users.html', users=users)
 
-@app.route('/query_builder')
+@app.route('/query_builder', methods=['GET','POST'])
+@login_required
 def query_builder():
-    return render_template('query_builder.html')
+    if request.method == 'POST':
+        # print(request.get_json())
+        # data = get_request()
+        # print("___DATA___",data)
+        page = request.args.get('page', 1, type=int)
+        per_page = 10
+        print(request.mimetype)
+        print("\t\t ========================================= \n",dir(request))
+        print("\t\t ========================================= \n",request.form)
+        filters = {}
+        for  key, value in request.form.items():
+            if value.strip() != "":
+                filters.update({key:value})
+            # print (request.form.keys())
+            # print (request.form.values())
+            # print (request.form.items())
+        print(filters)
+    # Remove any keys with empty values
+        filters = {key: value for key, value in filters.items() if value}
+        print(filters)
+        # Start with the base query
+        query = db.session.query(Company)
+        
+        # Apply filters dynamically
+        query = query.filter_by(**filters)
+        print(query)
+
+        # Paginate the results
+        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+        results = pagination.items
+        # Execute the query
+        # results = query.all()
+        print(results)
+        # Convert results to a list of dictionaries for JSON response
+        # results_list = [{'id': company.id, 'name': company.name, 'industry': company.industry, 'location': company.location} for company in results]
+        final_response = []
+        for row in results:
+            data = {
+                "name":row.name or None,
+                "domain":row.domain or None,
+                "year_founded":row.year_founded or None,
+                "industry":row.industry or None,
+                "size_range":row.size_range or None,
+                "locality":row.locality or None,
+                "country":row.country or None,
+                "linkedin_url":row.linkedin_url or None,
+                "current_employee":row.current_employee or None,
+                "total_employee":row.total_employee or None,
+            }
+            final_response.append(data)
+
+
+        if not final_response:
+            return render_template('query_result.html', message='No data found')
+
+        return render_template('query_result.html', data=final_response, pagination=pagination)
+
+    elif request.method == 'GET':
+        return render_template('query_builder.html')
 
 if __name__ == "__main__":
     app.run(debug=True)

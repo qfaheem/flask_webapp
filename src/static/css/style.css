@@ -1,0 +1,4 @@
+/* Ensure smooth fade-out transition for flash messages */
+#flash-messages {
+    transition: opacity 1s ease-out;
+}

@@ -6,20 +6,24 @@
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-md-6">
-                <h2 class="text-center">Login</h2>
+                <h2 class="text-center mt-5">Log In</h2>
                 <form method="POST">
                     {{ form.hidden_tag() }}
                     <div class="form-group">
                         {{ form.username.label(class="form-label") }}
-                        {{ form.username(class="form-control form-control-sm") }}
+                        {{ form.username(class="form-control form-control-sm", required=True) }}
                     </div>
                     <div class="form-group">
                         {{ form.password.label(class="form-label") }}
-                        {{ form.password(class="form-control form-control-sm") }}
+                        {{ form.password(class="form-control form-control-sm", required=True) }}
                     </div>
-                    <!-- <button type="submit" class="btn btn-primary btn-block">Login</button> -->
-                    {{ form.submit(class="btn btn-primary btn-block") }}
+                    <div class="form-group">
+                        {{ form.submit(class="btn btn-primary btn-block") }}
+                    </div>
                 </form>
+                <div class="text-center mt-3">
+                    <p>Don't have an account? <a href="{{ url_for('signup') }}">Sign up here</a></p>
+                </div>
             </div>
         </div>
     </div>
