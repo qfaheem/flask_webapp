@@ -197,68 +197,118 @@ def manage_users():
     users = User.query.paginate(page=page, per_page=10)  # Adjust per_page as needed
     return render_template('users.html', users=users)
 
-@app.route('/query_builder', methods=['GET','POST'])
+# @app.route('/query_builder', methods=['GET','POST'])
+# @login_required
+# def query_builder():
+#     if request.method == 'POST':
+#         # print(request.get_json())
+#         # data = get_request()
+#         # print("___DATA___",data)
+#         page = request.args.get('page', 1, type=int)
+#         per_page = 10
+#         print(request.mimetype)
+#         print("\t\t ========================================= \n",dir(request))
+#         print("\t\t ========================================= \n",request.form)
+#         filters = {}
+#         for  key, value in request.form.items():
+#             if value.strip() != "":
+#                 filters.update({key:value})
+#             # print (request.form.keys())
+#             # print (request.form.values())
+#             # print (request.form.items())
+#         print(filters)
+#     # Remove any keys with empty values
+#         filters = {key: value for key, value in filters.items() if value}
+#         print(filters)
+#         # Start with the base query
+#         query = db.session.query(Company)
+        
+#         # Apply filters dynamically
+#         query = query.filter_by(**filters)
+#         print(query)
+
+#         # Paginate the results
+#         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+#         results = pagination.items
+#         # Execute the query
+#         # results = query.all()
+#         print(results)
+#         # Convert results to a list of dictionaries for JSON response
+#         # results_list = [{'id': company.id, 'name': company.name, 'industry': company.industry, 'location': company.location} for company in results]
+#         final_response = []
+#         for row in results:
+#             data = {
+#                 "name":row.name or None,
+#                 "domain":row.domain or None,
+#                 "year_founded":row.year_founded or None,
+#                 "industry":row.industry or None,
+#                 "size_range":row.size_range or None,
+#                 "locality":row.locality or None,
+#                 "country":row.country or None,
+#                 "linkedin_url":row.linkedin_url or None,
+#                 "current_employee":row.current_employee or None,
+#                 "total_employee":row.total_employee or None,
+#             }
+#             final_response.append(data)
+
+
+#         if not final_response:
+#             return render_template('query_result.html', message='No data found')
+
+#         return render_template('query_result.html', data=final_response, pagination=pagination)
+
+#     elif request.method == 'GET':
+#         return render_template('query_builder.html')
+
+@app.route('/query_builder', methods=['GET'])
 @login_required
 def query_builder():
-    if request.method == 'POST':
-        # print(request.get_json())
-        # data = get_request()
-        # print("___DATA___",data)
-        page = request.args.get('page', 1, type=int)
-        per_page = 10
-        print(request.mimetype)
-        print("\t\t ========================================= \n",dir(request))
-        print("\t\t ========================================= \n",request.form)
-        filters = {}
-        for  key, value in request.form.items():
-            if value.strip() != "":
-                filters.update({key:value})
-            # print (request.form.keys())
-            # print (request.form.values())
-            # print (request.form.items())
-        print(filters)
-    # Remove any keys with empty values
-        filters = {key: value for key, value in filters.items() if value}
-        print(filters)
-        # Start with the base query
-        query = db.session.query(Company)
-        
-        # Apply filters dynamically
-        query = query.filter_by(**filters)
-        print(query)
-
-        # Paginate the results
-        pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-        results = pagination.items
-        # Execute the query
-        # results = query.all()
-        print(results)
-        # Convert results to a list of dictionaries for JSON response
-        # results_list = [{'id': company.id, 'name': company.name, 'industry': company.industry, 'location': company.location} for company in results]
-        final_response = []
-        for row in results:
-            data = {
-                "name":row.name or None,
-                "domain":row.domain or None,
-                "year_founded":row.year_founded or None,
-                "industry":row.industry or None,
-                "size_range":row.size_range or None,
-                "locality":row.locality or None,
-                "country":row.country or None,
-                "linkedin_url":row.linkedin_url or None,
-                "current_employee":row.current_employee or None,
-                "total_employee":row.total_employee or None,
-            }
-            final_response.append(data)
+    # Render the form
+    return render_template('query_builder.html')
 
 
-        if not final_response:
-            return render_template('query_result.html', message='No data found')
+@app.route('/query_results', methods=['GET','POST'])
+@login_required
+def query_results():
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
 
-        return render_template('query_result.html', data=final_response, pagination=pagination)
+    # Collect filters from the form
+    filters = {}
+    for key, value in request.form.items():
+        if value.strip() != "":
+            filters.update({key: value})
+    filters = {key: value for key, value in filters.items() if value}
 
-    elif request.method == 'GET':
-        return render_template('query_builder.html')
+    # Build the query
+    query = db.session.query(Company).filter_by(**filters)
+
+    # Paginate the results
+    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
+    results = pagination.items
+
+    # Convert results to a list of dictionaries
+    final_response = []
+    for row in results:
+        data = {
+            "name": row.name or None,
+            "domain": row.domain or None,
+            "year_founded": row.year_founded or None,
+            "industry": row.industry or None,
+            "size_range": row.size_range or None,
+            "locality": row.locality or None,
+            "country": row.country or None,
+            "linkedin_url": row.linkedin_url or None,
+            "current_employee": row.current_employee or None,
+            "total_employee": row.total_employee or None,
+        }
+        final_response.append(data)
+
+    if not final_response:
+        return render_template('query_builder.html', message='No data found', filters=filters)
+
+    return render_template('query_result.html', data=final_response, filters=filters, pagination=pagination)
+
 
 if __name__ == "__main__":
     app.run(debug=True)

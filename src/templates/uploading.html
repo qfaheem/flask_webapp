@@ -8,6 +8,9 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body> -->
+
+
+    
     {% extends 'layout.html' %}
 
     {% block title %}Upload{% endblock %}
@@ -19,7 +22,6 @@
                     <h2 class="text-center mt-5">Upload File</h2>
                     <form id="upload-form" method="POST" enctype="multipart/form-data">
                         <div class="form-group">
-                            <!-- File input and label for showing selected file -->
                             <input type="file" class="form-control-file" id="file-input" name="file" required>
                             <label for="file-input" id="file-label" class="form-control mt-2">No file chosen</label>
                         </div>

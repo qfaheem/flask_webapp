@@ -1,89 +1,108 @@
-{% extends 'layout.html' %}
-
-{% block title %}Query Builder{% endblock %}
-
-{% block content %}
-    <h2>Query Builder</h2>
-    <form method="POST" action="{{ url_for('query_builder') }}">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" class="form-control" id="name" name="name">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="domain">Domain</label>
-                        <input type="text" class="form-control" id="domain" name="domain">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="year_founded">Year Founded</label>
-                        <select class="form-control" id="year_founded" name="year_founded">
-                            <option value="">Select Year</option>
-                            {% for year in range(1900, 2025) %}
-                                <option value="{{ year }}">{{ year }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-3">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="industry">Industry</label>
-                        <select class="form-control" id="industry" name="industry">
-                            <option value="">Select Industry</option>
-                            <option value="Technology">Technology</option>
-                            <option value="Finance">Finance</option>
-                            <option value="Healthcare">Healthcare</option>
-                            <option value="Education">Education</option>
-                            <!-- Add more industries as needed -->
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="size_range">Size Range</label>
-                        <input type="text" class="form-control" id="size_range" name="size_range">
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="locality">Locality</label>
-                        <input type="text" class="form-control" id="locality" name="locality">
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-3">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label for="country">Country</label>
-                        <select class="form-control" id="country" name="country">
-                            <option value="">Select Country</option>
-                            <option value="USA">USA</option>
-                            <option value="Canada">Canada</option>
-                            <option value="UK">UK</option>
-                            <option value="Australia">Australia</option>
-                            <option value="India">India</option>
-                            <option value="South Africa">South Africa</option>
-                            <!-- Add more countries as needed -->
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row mt-3">
-                <div class="col text-center">
-                    <button type="submit" class="btn btn-primary">Query Data</button>
-                    <button type="reset" class="btn btn-danger">Reset</button>
-                </div>
-            </div>
+{% extends 'layout.html' %} {% block title %}Query Builder{% endblock %} {%
+block content %}
+<h2>Query Builder</h2>
+{% if message %}
+<div class="alert alert-warning">{{ message }}</div>
+{% endif %}
+<form method="POST" action="{{ url_for('query_results') }}">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" class="form-control" id="name" name="name" />
         </div>
-    </form>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="domain">Domain</label>
+          <input type="text" class="form-control" id="domain" name="domain" />
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="year_founded">Year Founded</label>
+          <select class="form-control" id="year_founded" name="year_founded">
+            <option value="">Select Year</option>
+            {% for year in range(1900, 2025) %}
+            <option value="{{ year }}">{{ year }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="industry">Industry</label>
+          <select class="form-control" id="industry" name="industry">
+            <option value="">Select Industry</option>
+            <option value="Technology">Technology</option>
+            <option value="Finance">Finance</option>
+            <option value="Healthcare">Healthcare</option>
+            <option value="Education">Education</option>
+            <!-- Add more industries as needed -->
+          </select>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="size_range">Size Range</label>
+          <input
+            type="text"
+            class="form-control"
+            id="size_range"
+            name="size_range"
+          />
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="locality">Locality</label>
+          <input
+            type="text"
+            class="form-control"
+            id="locality"
+            name="locality"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col-md-4">
+        <div class="form-group">
+          <label for="country">Country</label>
+          <select class="form-control" id="country" name="country">
+            <option value="">Select Country</option>
+            <option value="USA">USA</option>
+            <option value="Canada">Canada</option>
+            <option value="UK">UK</option>
+            <option value="Australia">Australia</option>
+            <option value="India">India</option>
+            <option value="South Africa">South Africa</option>
+            <!-- Add more countries as needed -->
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="row mt-3">
+      <div class="col text-center">
+        <button type="submit" class="btn btn-primary">Query Data</button>
+        <button type="reset" class="btn btn-danger">Reset</button>
+      </div>
+    </div>
+  </div>
+</form>
 {% endblock %}
+<script>
+  // Remove the message after 1 second
+  setTimeout(function () {
+    const message = document.getElementById("message");
+    if (message) {
+      message.style.display = "none";
+    }
+  }, 1000);
+</script>
