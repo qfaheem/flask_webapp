@@ -8,22 +8,27 @@ from src.models.user import User
 from src.models.company_data import Company
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import time, os, json
+import time
+import os
+import json
 from extensions import db, migrate, login_manager
 import pandas as pd
 
-app = Flask(__name__,template_folder=r'src\templates', static_folder=r'src\static')
+app = Flask(__name__, template_folder=r'src\templates',
+            static_folder=r'src\static')
 
 app.config["SECRET_KEY"] = "doVHDsQHQv21ivHDnNtR7JMzBgFHhRFj366C91J6nnwqct4w"
 app.config["SQLALCHEMY_DATABASE_URI"] = 'postgresql://dfhuser:dfh%40U%24er90@localhost/data_filter_hub'
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-app.config["CELERY_BROKER_URL"] = 'redis://127.0.0.1:6379/0'  # Change as per your Redis configuration
+# Change as per your Redis configuration
+app.config["CELERY_BROKER_URL"] = 'redis://127.0.0.1:6379/0'
 app.config["CELERY_RESULT_BACKEND"] = 'redis://127.0.0.1:6379/0'
 
 # db = SQLAlchemy()
 # migrate = Migrate()
-celery = Celery(app.name, broker=app.config["CELERY_BROKER_URL"], backend=app.config["CELERY_RESULT_BACKEND"])
+celery = Celery(
+    app.name, broker=app.config["CELERY_BROKER_URL"], backend=app.config["CELERY_RESULT_BACKEND"])
 celery.conf.update(app.config)
 # celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6380/0")
 # celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://17.0.0.1:6380/0")
@@ -37,6 +42,7 @@ login_manager.login_view = 'login'
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
+
 
 def get_request():
     mimetype = request.mimetype
@@ -54,20 +60,22 @@ def get_request():
         _request_data = {}
     return _request_data
 
+
 @celery.task
 def delay_func():
     print("delayed task !!!")
     time.sleep(5)
+
 
 @app.route("/testing")
 def test():
     delay_func.delay()
     return "Hello Testing !!!"
 
+
 @app.route('/')
 def landing():
     return render_template('landing.html')
-
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -91,18 +99,6 @@ def login():
     # flash('Invalid username or password', 'danger')
     return render_template('login.html', form=form)
 
-# @app.route('/login', methods=['GET', 'POST'])
-# def login():
-#     form = LoginForm()
-#     if form.validate_on_submit():
-#         user = User.query.filter_by(username=form.username.data).first()
-#         if user and user.check_password(form.password.data):
-#             login_user(user)
-#             flash('Login successful!', 'success')
-#             return redirect(url_for('upload_data'))  # Redirect to the upload data page or any other page
-#         else:
-#             flash('Invalid username or password', 'danger')
-#     return render_template('login.html', form=form)
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -120,6 +116,7 @@ def signup():
         # return redirect(url_for('upload_data'))
         return render_template('uploading.html')
     return render_template('signup.html', form=form)
+
 
 @celery.task
 def process_file(file_path):
@@ -152,6 +149,7 @@ def process_file(file_path):
             db.session.rollback()  # Rollback in case of error
             print(f"An error occurred while processing the file: {e}")
 
+
 @app.route('/upload_data', methods=['GET', 'POST'])
 @login_required
 def upload_data():
@@ -169,7 +167,8 @@ def upload_data():
             uploads_dir = 'uploads_dir'
             os.makedirs(uploads_dir, exist_ok=True)
             filename = secure_filename(file.filename)
-            file_path = os.path.join('uploads_dir', filename)  # Ensure 'uploads' folder exists
+            # Ensure 'uploads' folder exists
+            file_path = os.path.join('uploads_dir', filename)
             print(file_path)
             file.save(file_path)
             task = process_file.delay(file_path)  # Trigger the Celery task
@@ -179,10 +178,11 @@ def upload_data():
     # return {"message":"uploaded"}
     return render_template('uploading.html')  # Ensure this template exists
 
+
 @app.route('/logout')
 @login_required
 def logout():
-    session.pop('logged_in', None) 
+    session.pop('logged_in', None)
     session.clear()  # Clear the session data
     logout_user()
     flash('You have been logged out.', 'info')
@@ -194,71 +194,10 @@ def logout():
 def manage_users():
     print("current : ", current_user)
     page = request.args.get('page', 1, type=int)
-    users = User.query.paginate(page=page, per_page=10)  # Adjust per_page as needed
+    # Adjust per_page as needed
+    users = User.query.paginate(page=page, per_page=10)
     return render_template('users.html', users=users)
 
-# @app.route('/query_builder', methods=['GET','POST'])
-# @login_required
-# def query_builder():
-#     if request.method == 'POST':
-#         # print(request.get_json())
-#         # data = get_request()
-#         # print("___DATA___",data)
-#         page = request.args.get('page', 1, type=int)
-#         per_page = 10
-#         print(request.mimetype)
-#         print("\t\t ========================================= \n",dir(request))
-#         print("\t\t ========================================= \n",request.form)
-#         filters = {}
-#         for  key, value in request.form.items():
-#             if value.strip() != "":
-#                 filters.update({key:value})
-#             # print (request.form.keys())
-#             # print (request.form.values())
-#             # print (request.form.items())
-#         print(filters)
-#     # Remove any keys with empty values
-#         filters = {key: value for key, value in filters.items() if value}
-#         print(filters)
-#         # Start with the base query
-#         query = db.session.query(Company)
-        
-#         # Apply filters dynamically
-#         query = query.filter_by(**filters)
-#         print(query)
-
-#         # Paginate the results
-#         pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-#         results = pagination.items
-#         # Execute the query
-#         # results = query.all()
-#         print(results)
-#         # Convert results to a list of dictionaries for JSON response
-#         # results_list = [{'id': company.id, 'name': company.name, 'industry': company.industry, 'location': company.location} for company in results]
-#         final_response = []
-#         for row in results:
-#             data = {
-#                 "name":row.name or None,
-#                 "domain":row.domain or None,
-#                 "year_founded":row.year_founded or None,
-#                 "industry":row.industry or None,
-#                 "size_range":row.size_range or None,
-#                 "locality":row.locality or None,
-#                 "country":row.country or None,
-#                 "linkedin_url":row.linkedin_url or None,
-#                 "current_employee":row.current_employee or None,
-#                 "total_employee":row.total_employee or None,
-#             }
-#             final_response.append(data)
-
-
-#         if not final_response:
-#             return render_template('query_result.html', message='No data found')
-
-#         return render_template('query_result.html', data=final_response, pagination=pagination)
-
-#     elif request.method == 'GET':
-#         return render_template('query_builder.html')
 
 @app.route('/query_builder', methods=['GET'])
 @login_required
@@ -267,7 +206,7 @@ def query_builder():
     return render_template('query_builder.html')
 
 
-@app.route('/query_results', methods=['GET','POST'])
+@app.route('/query_results', methods=['GET', 'POST'])
 @login_required
 def query_results():
     page = request.args.get('page', 1, type=int)

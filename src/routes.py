@@ -9,6 +9,7 @@ from celery import shared_task
 from . import db
 from celery import Celery, Task
 
+
 def celery_init_app(app):
     class FlaskTask(Task):
         def __call__(self, *args, **kwargs):
@@ -19,19 +20,19 @@ def celery_init_app(app):
     celery_app.set_default()
     app.extensions["celery"] = celery_app
     return celery_app
-    
+
 
 def init_routes(app):
 
     app.config.from_mapping(
         CELERY=dict(
             broker_url="redis://localhost",
-                result_backend="redis://localhost",
-                task_ignore_result=True,
-            ),
-        )
+            result_backend="redis://localhost",
+            task_ignore_result=True,
+        ),
+    )
     celery_app = celery_init_app(app)
-    
+
     @app.route('/')
     def landing():
         return render_template('landing.html')
@@ -42,8 +43,8 @@ def init_routes(app):
         if form.validate_on_submit():
             user = User.query.filter_by(username=form.username.data).first()
             if user and user.check_password(form.password.data):
-                session['logged_in'] = True 
-                print("working",user.password)
+                session['logged_in'] = True
+                print("working", user.password)
                 flash('Login successful!', 'success')
                 return redirect(url_for('upload'))
             else:
@@ -69,13 +70,12 @@ def init_routes(app):
     def upload():
         return render_template('uploading.html')
 
-
     @celery_app.task(name="app.test_task")
     # @shared_task(ignore_result=False)
     def test_task():
         print("Test task executed!")
         return "Task completed!"
-    
+
     @app.route('/test_task')
     def run_test_task():
         test_task.delay()
@@ -102,27 +102,27 @@ def init_routes(app):
     def manage_users():
         users = User.query.all()  # Fetch all users
         return render_template('users.html', users=users)
-    
+
     @app.route('/add_user', methods=['GET', 'POST'])
     def add_user():
         if request.method == 'POST':
             username = request.form['username']
             email = request.form['email']
             password = request.form['password']
-            
+
             new_user = User(username=username, email=email)
             new_user.set_password(password)
             db.session.add(new_user)
             db.session.commit()
-            
+
             flash('User added successfully!', 'success')
             return redirect(url_for('manage_users'))
 
         return render_template('add_user.html')
-    
+
     @app.route('/logout')
     def logout():
-        session.pop('logged_in', None) 
+        session.pop('logged_in', None)
         session.clear()  # Clear the session data
         flash('You have been logged out.', 'info')
         return redirect(url_for('landing'))
@@ -138,10 +138,10 @@ def init_routes(app):
         # # Load the CSV file into a pandas DataFrame
         # df = pd.read_csv(file_path)
         # df.columns = df.columns.str.strip()  # Clean up column names
-        
+
         # # Ensure 'year_founded' is numeric
         # df['year founded'] = pd.to_numeric(df['year founded'], errors='coerce')
-        
+
         # # Optionally, drop rows where 'year founded' couldn't be converted
         # df.dropna(subset=['year founded'], inplace=True)
 
@@ -154,16 +154,19 @@ def init_routes(app):
             records = []
             # Clean and preprocess the data
             chunk.columns = chunk.columns.str.strip()  # Clean up column names
-            
+
             # Ensure 'year founded' is numeric and clean the data
-            chunk['year founded'] = pd.to_numeric(chunk['year founded'], errors='coerce')
-            chunk.dropna(subset=['year founded'], inplace=True)  # Drop rows with NaN 'year founded'
-            chunk['year founded'] = chunk['year founded'].astype(int)  # Convert to integer
+            chunk['year founded'] = pd.to_numeric(
+                chunk['year founded'], errors='coerce')
+            # Drop rows with NaN 'year founded'
+            chunk.dropna(subset=['year founded'], inplace=True)
+            chunk['year founded'] = chunk['year founded'].astype(
+                int)  # Convert to integer
             if chunk.columns[0] != 'sr_no':
                 chunk.rename(columns={chunk.columns[0]: 'sr_no'}, inplace=True)
             # Iterate over the rows of the DataFrame and save to PostgreSQL
             for index, row in chunk.iterrows():
-                print("Current Index: ",index)
+                print("Current Index: ", index)
                 new_record = Company(
                     sr_no=int(row['sr_no']),
                     name=str(row['name']),
@@ -233,14 +236,15 @@ def init_routes(app):
                 uploads_dir = 'uploads_dir'
                 os.makedirs(uploads_dir, exist_ok=True)
                 filename = secure_filename(file.filename)
-                file_path = os.path.join('uploads_dir', filename)  # Ensure 'uploads' folder exists
+                # Ensure 'uploads' folder exists
+                file_path = os.path.join('uploads_dir', filename)
                 print(file_path)
                 file.save(file_path)
                 task = process_file(file_path)  # Trigger the Celery task
                 # flash('File uploaded and processing started!', 'success')
                 return jsonify({"task_id": task.id, "status": "File processing started!"})
                 # return redirect(url_for('upload_data'))
-        return {"message":"uploaded"}
+        return {"message": "uploaded"}
         # return render_template('upload_data.html')  # Ensure this template exists
 
     @app.route('/query_builder')

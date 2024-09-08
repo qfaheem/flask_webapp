@@ -3,8 +3,10 @@ from .models.company_data import Company  # Import your User model
 from .models import db  # Import your database instance
 from celery import Celery
 
+
 def make_celery(app):
-    celery = Celery(app.import_name, backend=app.config['CELERY_RESULT_BACKEND'], broker=app.config['CELERY_BROKER_URL'])
+    celery = Celery(
+        app.import_name, backend=app.config['CELERY_RESULT_BACKEND'], broker=app.config['CELERY_BROKER_URL'])
     celery.conf.update(app.config)
     return celery
 
@@ -15,6 +17,8 @@ def make_celery(app):
 # celery = make_celery(app)
 
 # @celery.task
+
+
 def process_file(file_path):
     try:
         # Load the CSV file into a pandas DataFrame

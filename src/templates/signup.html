@@ -1,38 +1,50 @@
-{% extends 'layout.html' %}
-
-{% block title %}Sign Up{% endblock %}
-
-{% block content %}
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <h2 class="text-center mt-5">Sign Up</h2>
-                <form method="POST">
-                    {{ form.hidden_tag() }}
-                    <div class="form-group">
-                        {{ form.username.label(class="form-label") }}<span class="text-danger">*</span>
-                        {{ form.username(class="form-control form-control-sm", required=True) }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.email.label(class="form-label") }}<span class="text-danger">*</span>
-                        {{ form.email(class="form-control form-control-sm", required=True) }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.password.label(class="form-label") }}<span class="text-danger">*</span>
-                        {{ form.password(class="form-control form-control-sm", required=True) }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.confirm_password.label(class="form-label") }}<span class="text-danger">*</span>
-                        {{ form.confirm_password(class="form-control form-control-sm", required=True) }}
-                    </div>
-                    <div class="form-group">
-                        {{ form.submit(class="btn btn-primary btn-block") }}
-                    </div>
-                </form>
-                <div class="text-center mt-3">
-                    <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
-                </div>
-            </div>
+{% extends 'layout.html' %} {% block title %}Sign Up{% endblock %} {% block
+content %}
+<div class="container">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      <h2 class="text-center mt-5">Sign Up</h2>
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="form-group">
+          {{ form.username.label(class="form-label") }}<span class="text-danger"
+            >*</span
+          >
+          {{ form.username(class="form-control form-control-sm", required=True)
+          }}
         </div>
+        <div class="form-group">
+          {{ form.email.label(class="form-label") }}<span class="text-danger"
+            >*</span
+          >
+          {{ form.email(class="form-control form-control-sm", required=True) }}
+        </div>
+        <div class="form-group">
+          {{ form.password.label(class="form-label") }}<span class="text-danger"
+            >*</span
+          >
+          {{ form.password(class="form-control form-control-sm", required=True)
+          }}
+        </div>
+        <div class="form-group">
+          {{ form.confirm_password.label(class="form-label") }}<span
+            class="text-danger"
+            >*</span
+          >
+          {{ form.confirm_password(class="form-control form-control-sm",
+          required=True) }}
+        </div>
+        <div class="form-group">
+          {{ form.submit(class="btn btn-primary btn-block") }}
+        </div>
+      </form>
+      <div class="text-center mt-3">
+        <p>
+          Already have an account?
+          <a href="{{ url_for('login') }}">Login here</a>
+        </p>
+      </div>
     </div>
+  </div>
+</div>
 {% endblock %}

@@ -1,5 +1,6 @@
 from extensions import db
 
+
 class Company(db.Model):
     __tablename__ = 'companies'  # Adjust the table name as needed
 
