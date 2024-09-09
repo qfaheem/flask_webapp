@@ -10,10 +10,10 @@ class LoginForm(FlaskForm):
 
 
 class SignupForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(
-        min=6, message="Password must be atleast 6 charecters long")])
+    username = StringField('Username', validators=[DataRequired()])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired(), Length(
+        min=6, message="Password must be atleast 6 charecters long")])
     confirm_password = PasswordField('Confirm Password', validators=[
                                      DataRequired(), EqualTo('password', message="Password must match")])
     submit = SubmitField('Sign Up')
