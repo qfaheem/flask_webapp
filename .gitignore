@@ -1,2 +1,3 @@
 __pycache__/
-uploads_dir/
+uploads_dir/*
+.env

@@ -1,54 +1,56 @@
-from flask import Flask, render_template, flash, redirect, url_for, session, request, jsonify, current_app
-from celery import Celery
-# from flask_sqlalchemy import SQLAlchemy
-# from flask_migrate import Migrate
-from flask_login import UserMixin, login_user, login_required, logout_user, current_user
-from src.forms import LoginForm, SignupForm
-from src.models.user import User
-from src.models.company_data import Company
-from werkzeug.security import generate_password_hash, check_password_hash
-from werkzeug.utils import secure_filename
-import time
+# Standard Library Imports
 import os
 import json
-from extensions import db, migrate, login_manager
+
+# Third-Party Imports
 import pandas as pd
+from flask import Flask, render_template, flash, redirect, url_for, session, request
+from flask_login import login_user, login_required, logout_user, current_user
+from celery import Celery
+from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
 
-app = Flask(__name__, template_folder=r'src\templates',
-            static_folder=r'src\static')
+# Local Imports
+from src.forms import LoginForm, SignupForm, AddUserForm
+from src.models.user import User
+from src.models.company_data import Company
+from extensions import db, migrate, login_manager
 
-app.config["SECRET_KEY"] = "doVHDsQHQv21ivHDnNtR7JMzBgFHhRFj366C91J6nnwqct4w"
-app.config["SQLALCHEMY_DATABASE_URI"] = 'postgresql://dfhuser:dfh%40U%24er90@localhost/data_filter_hub'
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+load_dotenv()
+# Initialize Flask app
+app = Flask(__name__, template_folder=r'src\templates', static_folder=r'src\static')
 
-# Change as per your Redis configuration
-app.config["CELERY_BROKER_URL"] = 'redis://127.0.0.1:6379/0'
-app.config["CELERY_RESULT_BACKEND"] = 'redis://127.0.0.1:6379/0'
+# Configure app
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('SQLALCHEMY_DATABASE_URI')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config['CELERY_BROKER_URL'] = os.getenv('CELERY_BROKER_URL')
+app.config['CELERY_RESULT_BACKEND'] = os.getenv('CELERY_RESULT_BACKEND')
 
-# db = SQLAlchemy()
-# migrate = Migrate()
+# Initialize Celery
 celery = Celery(
-    app.name, broker=app.config["CELERY_BROKER_URL"], backend=app.config["CELERY_RESULT_BACKEND"])
+    app.name,
+    broker=app.config["CELERY_BROKER_URL"],
+    backend=app.config["CELERY_RESULT_BACKEND"]
+)
 celery.conf.update(app.config)
-# celery.conf.broker_url = os.environ.get("CELERY_BROKER_URL", "redis://127.0.0.1:6380/0")
-# celery.conf.result_backend = os.environ.get("CELERY_RESULT_BACKEND", "redis://17.0.0.1:6380/0")
+
+# Initialize extensions
 db.init_app(app)
 migrate.init_app(app, db)
 login_manager.init_app(app)
 login_manager.login_view = 'login'
 
-
-# Define the user_loader function
+# Define user loader for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
+# Helper function to parse request data
 def get_request():
     mimetype = request.mimetype
     _request_data = {}
     if mimetype == 'application/x-www-form-urlencoded':
-        print(request.form)
         _request_data = json.loads(next(iter(request.form.keys())))
     elif mimetype == 'multipart/form-data':
         _request_data = dict(request.form)
@@ -60,45 +62,25 @@ def get_request():
         _request_data = {}
     return _request_data
 
-
-@celery.task
-def delay_func():
-    print("delayed task !!!")
-    time.sleep(5)
-
-
-@app.route("/testing")
-def test():
-    delay_func.delay()
-    return "Hello Testing !!!"
-
-
 @app.route('/')
 def landing():
     return render_template('landing.html')
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('login'))
     form = LoginForm()
-    print("=====", form)
     if form.validate_on_submit():
         user = User.query.filter_by(username=form.username.data).first()
-        # user = User.get_by_email(form.username.data)
         if user and user.check_password(form.password.data):
             login_user(user)
             flash('Login successful!', 'success')
-            # # return redirect(url_for('upload_data'))
-            next_page = request.args.get('next')  # Get the 'next' parameter
+            next_page = request.args.get('next')
             return redirect(next_page or url_for('upload_data'))
-            # return render_template('uploading.html')
         else:
             flash('Invalid username or password', 'danger')
-    # flash('Invalid username or password', 'danger')
     return render_template('login.html', form=form)
-
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -113,32 +95,19 @@ def signup():
         db.session.commit()
         login_user(new_user)
         flash('Account created successfully! Please log in.', 'success')
-        # return redirect(url_for('upload_data'))
         return render_template('uploading.html')
     return render_template('signup.html', form=form)
-
 
 @celery.task
 def process_file(file_path):
     with app.app_context():
         try:
-            # Load the CSV file into a pandas DataFrame
             data_in_chunks = pd.read_csv(file_path, chunksize=100000)
-            # print("inside indezx")
             record = []
             for data in data_in_chunks:
-                # data.columns = data.columns.str.strip()  # Clean up column names
-
-                # # Ensure 'year founded' is numeric and clean the data
-                # data['year founded'] = pd.to_numeric(data['year founded'], errors='coerce')
-                # data.dropna(subset=['year founded'], inplace=True)  # Drop rows with NaN 'year founded'
-                # data['year founded'] = data['year founded'].astype(int)  # Convert to integer
                 if data.columns[0] != 'sr_no':
                     data.rename(columns={data.columns[0]: 'sr_no'}, inplace=True)
-
-                # Iterate over the rows of the DataFrame and save to PostgreSQL
                 for index, row in data.iterrows():
-                    print(type(row["name"]))
                     new_record = Company(
                         sr_no=int(row['sr_no']),
                         name=row['name'],
@@ -152,22 +121,17 @@ def process_file(file_path):
                         current_employee=int(row['current employee estimate']) if pd.notna(row['current employee estimate']) else None,
                         total_employee=int(row['total employee estimate']) if pd.notna(row['total employee estimate']) else None
                     )
-                    # print(new_record.sr_no)
                     record.append(new_record)
-                
                 db.session.bulk_save_objects(record)
-
-                db.session.commit()  # Commit the transaction
+                db.session.commit()
                 print("File processed and data added to PostgreSQL successfully.")
         except Exception as e:
-            db.session.rollback()  # Rollback in case of error
+            db.session.rollback()
             print(f"An error occurred while processing the file: {e}")
-
 
 @app.route('/upload_data', methods=['GET', 'POST'])
 @login_required
 def upload_data():
-    print("request in upload data ")
     if request.method == 'POST':
         if 'file' not in request.files:
             flash('No file part')
@@ -177,47 +141,50 @@ def upload_data():
             flash('No selected file')
             return redirect(request.url)
         if file:
-            # Ensure the 'uploads' directory exists
             uploads_dir = 'uploads_dir'
             os.makedirs(uploads_dir, exist_ok=True)
             filename = secure_filename(file.filename)
-            # Ensure 'uploads' folder exists
-            file_path = os.path.join('uploads_dir', filename)
-            print(file_path)
+            file_path = os.path.join(uploads_dir, filename)
             file.save(file_path)
-            task = process_file.delay(file_path)  # Trigger the Celery task
-            # flash('File uploaded and processing started!', 'success')
-            # return jsonify({"task_id": task.id, "status": "File processing started!"})
-            # return redirect(url_for('upload_data'))
-    # return {"message":"uploaded"}
-    return render_template('uploading.html')  # Ensure this template exists
-
+            process_file.delay(file_path)
+    return render_template('uploading.html')
 
 @app.route('/logout')
 @login_required
 def logout():
     session.pop('logged_in', None)
-    session.clear()  # Clear the session data
+    session.clear()
     logout_user()
     flash('You have been logged out.', 'info')
     return redirect(url_for('landing'))
 
-
 @app.route('/users', methods=['GET'])
 @login_required
 def manage_users():
-    print("current : ", current_user)
     page = request.args.get('page', 1, type=int)
-    # Adjust per_page as needed
     users = User.query.paginate(page=page, per_page=10)
     return render_template('users.html', users=users)
-
 
 @app.route('/query_builder', methods=['GET'])
 @login_required
 def query_builder():
-    # Render the form
     return render_template('query_builder.html')
+
+@app.route('/add_user', methods=['GET', 'POST'])
+@login_required
+def add_user():
+    form = AddUserForm()
+    if form.validate_on_submit():
+        username = form.username.data
+        email = form.email.data
+        password = form.password.data
+        new_user = User(username=username, email=email, password=password)
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        flash('User added successfully!', 'success')
+        return redirect(url_for('manage_users'))
+    return render_template('add_user.html', form=form)
 
 
 @app.route('/query_results', methods=['GET', 'POST'])
@@ -226,21 +193,17 @@ def query_results():
     page = request.args.get('page', 1, type=int)
     per_page = 10
 
-    # Collect filters from the form
     filters = {}
     for key, value in request.form.items():
         if value.strip() != "":
             filters.update({key: value})
     filters = {key: value for key, value in filters.items() if value}
-
-    # Build the query
+    print(filters)
     query = db.session.query(Company).filter_by(**filters)
     print(query)
-    # Paginate the results
     pagination = query.paginate(page=page, per_page=per_page, error_out=False)
     results = pagination.items
 
-    # Convert results to a list of dictionaries
     final_response = []
     for row in results:
         data = {
@@ -262,6 +225,6 @@ def query_results():
 
     return render_template('query_result.html', data=final_response, filters=filters, pagination=pagination)
 
-
+# Run the app
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=os.getenv('DEBUG') or False, port=os.getenv('PORT') or 5000)

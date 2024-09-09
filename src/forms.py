@@ -19,8 +19,5 @@ class SignupForm(FlaskForm):
     submit = SubmitField('Sign Up')
 
 
-class AddUserForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[DataRequired()])
+class AddUserForm(SignupForm):
     submit = SubmitField('Add User')
