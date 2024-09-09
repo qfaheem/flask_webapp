@@ -196,6 +196,8 @@ def query_results():
     filters = {}
     for key, value in request.form.items():
         if value.strip() != "":
+            if isinstance(value, str):
+                value = value.lower()
             filters.update({key: value})
     filters = {key: value for key, value in filters.items() if value}
     print(filters)
