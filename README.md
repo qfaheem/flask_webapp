@@ -21,7 +21,7 @@ This project is a Flask web application integrated with Celery for asynchronous 
 1. **Clone the Repository**
 
    ```bash
-   git clone https://github.com/yourusername/your-repo.git
+   git clone https://github.com/qfaheem/flask_webapp.git
    cd your-repo
 
 2. **Setup Virtual Environment**
